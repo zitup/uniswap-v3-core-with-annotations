@@ -1,3 +1,8 @@
+# Why
+I read the principle of uniswap before, but it is a bit fuzzy after a long time. Here I add code comments to deepen my understanding of the details.
+
+之前看过uniswap的原理，时间久了记忆有点模糊，这里通过添加代码注释的方式加深一下对细节的理解。
+
 # Uniswap V3
 
 [![Lint](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/lint.yml/badge.svg)](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/lint.yml)
