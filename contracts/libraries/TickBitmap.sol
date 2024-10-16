@@ -40,7 +40,7 @@ library TickBitmap {
     /// @param lte Whether to search for the next initialized tick to the left (less than or equal to the starting tick)
     /// @return next The next initialized or uninitialized tick up to 256 ticks away from the current tick
     /// @return initialized Whether the next tick is initialized, as the function only searches within up to 256 ticks
-    // 根据参数tick，寻找位图上最近一个已初始化的tick，如未找到，返回当前wordPos第一个tick
+    // 根据参数tick，寻找位图上最近一个已初始化的tick，如未找到，返回当前wordPos第一个或最后一个tick
     function nextInitializedTickWithinOneWord(
         mapping(int16 => uint256) storage self,
         int24 tick,
@@ -54,14 +54,14 @@ library TickBitmap {
         if (lte) {
             (int16 wordPos, uint8 bitPos) = position(compressed);
             // all the 1s at or to the right of the current bitPos
-            // bitPos个1
+            // (bitPos + 1)个1
             uint256 mask = (1 << bitPos) - 1 + (1 << bitPos);
             uint256 masked = self[wordPos] & mask;
 
             // if there are no initialized ticks to the right of or at the current tick, return rightmost in the word
             initialized = masked != 0;
             // overflow/underflow is possible, but prevented externally by limiting both tickSpacing and tick
-            // 如果存在已初始化的tick，则需要定位到masked中最高位的1；如果不存在，则返回当前方向最后一个tick。
+            // 如果存在已初始化的tick，则需要定位到masked中最高位的1；如果不存在，则返回第一个tick。
             // compressed - int24(bitPos)表示当前wordPos第一个tick
             // compressed - int24(bitPos - BitMath.mostSignificantBit(masked))表示该最高位bitPos对应的tick；
             // * tickSpacing将恢复到原始tick值，因为保存位图时，tick需要先除以tickSpacing。
@@ -69,14 +69,17 @@ library TickBitmap {
                 ? (compressed - int24(bitPos - BitMath.mostSignificantBit(masked))) * tickSpacing
                 : (compressed - int24(bitPos)) * tickSpacing;
         } else {
+            // 寻找大于当前tick的值
             // 往高位寻找第一个bitPos位为1的tick
             // start from the word of the next tick, since the current tick state doesn't matter
             (int16 wordPos, uint8 bitPos) = position(compressed + 1);
             // all the 1s at or to the left of the bitPos
+            // 低位bitPos个0，高位全是1
             uint256 mask = ~((1 << bitPos) - 1);
             uint256 masked = self[wordPos] & mask;
 
             // if there are no initialized ticks to the left of the current tick, return leftmost in the word
+            // 如果存在已初始化的tick，则需要定位到masked中最低位的1；如果不存在，则返回最后一个tick。
             initialized = masked != 0;
             // overflow/underflow is possible, but prevented externally by limiting both tickSpacing and tick
             next = initialized

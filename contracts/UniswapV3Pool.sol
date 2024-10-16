@@ -771,13 +771,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
         // 只要我们没有用完所有输入/输出，并且没有达到价格限制，就继续交换
         while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {
-            // 2.1 分步交换
+            // 2.1 分步交换，初始化每一步的状态
             StepComputations memory step;
 
-            // 每一步的初始价格等于上一个step之后的价格
+            // 每一步的初始价格 等于上一个step之后的价格
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
-            // 根据当前tick，寻找最近的已初始化的tick，或者本组第一个tick
+            // 根据当前tick，寻找最近的已初始化的tick，如果没找到，0换1返回第一个tick，1换0返回最后一个tick
             (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
                 state.tick,
                 tickSpacing,
@@ -797,8 +797,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
 
             // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
-            // 完成一步交换
-            // 交换后的价格, 消耗的输入代币数量, 得到的输出代币数量, 这一步的手续费数量 = 完成一步交换(初始价格, 目标价格, 可用流动性, 剩余代币，手续费)
+            // 2.2 完成一步交换，计算交换后的价格, 消耗的输入代币数量, 得到的输出代币数量, 这一步的手续费数量
+            // 完成一步交换(初始价格, 目标价格, 可用流动性, 剩余代币，手续费)
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
                 // 0换1：sqrtPriceLimitX96为价格下限，使用min(sqrtPriceNextX96, sqrtPriceLimitX96)
@@ -904,7 +904,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             }
         }
 
-        // 3. 更新全局价格，tick和预言机信息
+        // 3. 更新全局的价格、tick和预言机信息
         // update tick and write an oracle entry if the tick change
         // 如果交换后的tick与交换前的tick不同
         if (state.tick != slot0Start.tick) {
@@ -938,7 +938,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         // update fee growth global and, if necessary, protocol fees
         // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
-        // 4. 更新累计手续费和协议手续费
+        // 5. 更新累计手续费和协议手续费
         if (zeroForOne) {
             // 0换1，收取token0作为手续费，更新feeGrowthGlobal 0
             feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
@@ -949,7 +949,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             if (state.protocolFee > 0) protocolFees.token1 += state.protocolFee;
         }
 
-        // 5. 计算本次交换需要的amount0和amount1，让amount和token匹配
+        // 6. 计算本次交换需要的amount0和amount1，让amount和token匹配
         // 根据zeroForOne和exactInput，可以有四种swap组合：
         // 1. true true	输入固定数量token0，输出最大数量token1
         // 2. true false 输入最小数量token0，输出固定数量token1
@@ -967,7 +967,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);
 
         // do the transfers and collect payment
-        // 6. 转移token
+        // 7. 转移token
         if (zeroForOne) {
             // 输出token转给recipient
             if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));
