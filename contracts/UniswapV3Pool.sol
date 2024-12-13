@@ -570,6 +570,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         bytes calldata data
     ) external override lock returns (uint256 amount0, uint256 amount1) {
         require(amount > 0);
+        // amount 为正值，表示应该打给池子的token数量
         (, int256 amount0Int, int256 amount1Int) = _modifyPosition(
             ModifyPositionParams({
                 owner: recipient,
@@ -629,6 +630,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint128 amount
     ) external override lock returns (uint256 amount0, uint256 amount1) {
         // 更新tick和仓位信息
+        // amount 为负值，表示池子需要支付的手续费token数量
         (Position.Info storage position, int256 amount0Int, int256 amount1Int) = _modifyPosition(
             ModifyPositionParams({
                 owner: msg.sender,

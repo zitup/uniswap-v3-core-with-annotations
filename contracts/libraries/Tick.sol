@@ -117,7 +117,7 @@ library Tick {
             feeGrowthAbove1X128 = feeGrowthGlobal1X128 - upper.feeGrowthOutside1X128;
         }
 
-        // 3. fee inside = global - lower outside - uppper outside;
+        // 3. fee inside = global - lower outside - upper outside;
         feeGrowthInside0X128 = feeGrowthGlobal0X128 - feeGrowthBelow0X128 - feeGrowthAbove0X128;
         feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128;
     }
